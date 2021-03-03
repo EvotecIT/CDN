@@ -12,11 +12,13 @@
 </p>
 
 This code is here to support [PSWriteHTML](https://github.com/EvotecIT/PSWriteHTML) project.
-All files hosted here are available on [JSDelivr.com CDN](https://www.jsdelivr.com/package/gh/evotecit/cdn).
+All files hosted here are available on [JSDelivr CDN](https://www.jsdelivr.com).
 It's so PSWriteHTML can use CDN capabilities for files that are big but are not hosted anywhere or for files
 that are modified from originals.
 
 Information about how this works: <https://www.jsdelivr.com/features>
+
+Project Code: <https://www.jsdelivr.com/package/gh/evotecit/cdn>
 
 Some examples:
 
