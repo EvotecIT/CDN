@@ -3,11 +3,30 @@
 }
 function dataTablesCheckCondition(condition, data) {
     var columnName = condition['columnName'];
+    var reverseCondition = condition['reverseCondition'];
     var columnId = condition['columnId'];
     var operator = condition['operator'].toLowerCase();
     if (condition['dataStore'].toLowerCase() != 'html') {
+        var columnExists = false;
+        // we need to find whether the column name exists or not, and to make sure we know the column name exact case (it's case sensitive) just in case user provided it wrong
+        Object.getOwnPropertyNames(data).forEach(
+            function (val) {
+                if (val.toLowerCase() == columnName.toLowerCase()) {
+                    columnName = val;
+                    columnExists = true;
+                    return
+                }
+            }
+        );
+        if (!columnExists) {
+            return false;
+        }
         var columnValue = data[columnName];
     } else {
+        // check if columnid is set - if it's not set it means the column doesn't exists so we dont' proceed
+        if (columnId == -1) {
+            return false;
+        }
         var columnValue = data[columnId];
     }
     var conditionValue = condition['value'];
@@ -17,7 +36,7 @@ function dataTablesCheckCondition(condition, data) {
         columnValue = columnValue.toString().toLowerCase();
         conditionValue = conditionValue.toString().toLowerCase();
     } else if (condition['type'] == 'string') {
-        if (condition['caseInsensitive']) {
+        if (!condition['caseSensitive']) {
             columnValue = columnValue.toString().toLowerCase();
             conditionValue = conditionValue.toString().toLowerCase();
         }
@@ -26,9 +45,11 @@ function dataTablesCheckCondition(condition, data) {
             // this will be used for between, betweenInclusive
             // if its an array we need to make sure to convert conditionValue within an array
             var conditionValueTemporary = [];
-            for (let value of conditionValue) {
-                if (!isEmptyOrSpaces(value.toString())) {
-                    conditionValueTemporary.push(Number(value));
+
+            for (var i = 0; i < conditionValue.length; i++) {
+                //for (let value of conditionValue) {
+                if (!isEmptyOrSpaces(conditionValue[i].toString())) {
+                    conditionValueTemporary.push(Number(conditionValue[i]));
                 } else {
                     conditionValueTemporary.push(undefined);
                 }
@@ -55,8 +76,9 @@ function dataTablesCheckCondition(condition, data) {
     } else if (condition['type'] == 'date') {
         if (Array.isArray(condition['valueDate'])) {
             var conditionValueTemporary = [];
-            for (let value of condition['valueDate']) {
-                var valueDate = value;
+            for (var i = 0; i < condition['valueDate'].length; i++) {
+                //for (let value of condition['valueDate']) {
+                var valueDate = condition['valueDate'][i];
                 conditionValueTemporary.push(new Date(valueDate.year, valueDate.month - 1, valueDate.day, valueDate.hours, valueDate.minutes, valueDate.seconds));
             }
             conditionValue = conditionValueTemporary;
@@ -69,67 +91,120 @@ function dataTablesCheckCondition(condition, data) {
         var momentConversion = moment(columnValue, condition['dateTimeFormat']);
         columnValue = new Date(momentConversion);
     }
+
+    if (reverseCondition) {
+        var sideLeft = conditionValue;
+        var sideRight = columnValue;
+    } else {
+        var sideLeft = columnValue;
+        var sideRight = conditionValue;
+    }
     //console.log('after: ' + conditionValue + ' || ' + columnValue);
     if (operator == 'eq') {
-        if (columnValue == conditionValue) {
+        if (sideLeft == sideRight) {
+            return true;
+        }
+    } else if (operator == 'ne') {
+        if (sideLeft != sideRight) {
             return true;
         }
     } else if (operator == 'gt') {
-        if (columnValue > conditionValue) {
-
+        if (sideLeft > sideRight) {
             return true;
         }
     } else if (operator == 'lt') {
-        if (columnValue < conditionValue) {
+        if (sideLeft < sideRight) {
             return true;
         }
     } else if (operator == 'le') {
-        if (columnValue <= conditionValue) {
+        if (sideLeft <= sideRight) {
             return true;
         }
     } else if (operator == 'ge') {
-        if (columnValue >= conditionValue) {
+        if (sideLeft >= sideRight) {
+            return true;
+        }
+    } else if (operator == 'in') {
+        if (sideRight.indexOf(sideLeft) != -1) {
+            return true;
+        }
+    } else if (operator == 'notin') {
+        if (sideRight.indexOf(sideLeft) == -1) {
             return true;
         }
     } else if (operator == 'contains' || operator == 'like') {
         //var compareValue = conditionValue.replace('*', '.*')
-        var regex = new RegExp(conditionValue);
-        if (regex.test(columnValue)) {
+        var regex = new RegExp(sideRight);
+        if (regex.test(sideLeft)) {
             return true;
         }
     } else if (operator == 'notcontains' || operator == 'notlike') {
         //var compareValue = conditionValue.replace('*', '.*')
-        var regex = new RegExp(conditionValue)
-        if (!regex.test(columnValue)) {
+        var regex = new RegExp(sideRight)
+        if (!regex.test(sideLeft)) {
             return true;
         }
     } else if (operator == 'betweeninclusive') {
-        if (Array.isArray(conditionValue) && columnValue >= conditionValue[0] && columnValue <= conditionValue[1]) {
+        if (Array.isArray(sideRight) && sideLeft >= sideRight[0] && sideLeft <= sideRight[1]) {
             return true;
         }
     } else if (operator == 'between') {
-        if (Array.isArray(conditionValue) && columnValue > conditionValue[0] && columnValue < conditionValue[1]) {
+        if (Array.isArray(sideRight) && sideLeft > sideRight[0] && sideLeft < sideRight[1]) {
             return true;
         }
     }
     return false;
 }
-function dataTablesConditionalFormatting(row, data, conditionsContainer, highlightColumn, css) {
+function dataTablesConditionalFormatting(row, data, conditionsContainer, highlightColumn, css, failCss) {
     var conditionsMatch = [];
     var found = false;
-    for (let container of conditionsContainer) {
-        for (let condition of container['conditions']) {
+    for (var i = 0; i < conditionsContainer.length; i++) {
+        var container = conditionsContainer[i];
+        for (var k = 0; k < container['conditions'].length; k++) {
+            var condition = container['conditions'][k];
             conditionsMatch.push(
                 dataTablesCheckCondition(condition, data)
             );
         }
         if (container['logic'] == 'AND') {
-            if (conditionsMatch.every(value => value === true)) {
-                found = true;
+            // if (conditionsMatch.every(value => value === true)) {
+            //     found = true;
+            // }
+
+            for (var a = 0; a < conditionsMatch.length; a++) {
+                if (conditionsMatch[a] !== true) {
+                    found = false;
+                    break;
+                } else {
+                    found = true;
+                }
             }
+
+
         } else if (container['logic'] == 'OR') {
-            if (conditionsMatch.some(value => value === true)) {
-                found = true;
+            //if (conditionsMatch.some(value => value === true)) {
+            //    found = true;
+            //}
+
+            for (var a = 0; a < conditionsMatch.length; a++) {
+                if (conditionsMatch[a] === true) {
+                    found = true;
+                    break;
+                }
+            }
+
+        } else if (container['logic'] == 'NONE') {
+            // if (conditionsMatch.every(value => value != true)) {
+            //    found = true;
+            //}
+
+            for (var a = 0; a < conditionsMatch.length; a++) {
+                if (conditionsMatch[a] !== false) {
+                    found = false;
+                    break;
+                } else {
+                    found = true;
+                }
             }
         }
     }
@@ -137,7 +212,9 @@ function dataTablesConditionalFormatting(row, data, conditionsContainer, highlig
         if (highlightColumn == null) {
             $('td', row).css(css);
         } else {
-            for (let column of highlightColumn) {
+            for (var a = 0; a < highlightColumn.length; a++) {
+                var column = highlightColumn[a];
+                //for (let column of highlightColumn) {
                 $("td:eq(" + column + ")", row).css(css);
 
                 //if (data.Type == "group") {
@@ -145,23 +222,17 @@ function dataTablesConditionalFormatting(row, data, conditionsContainer, highlig
                 //}
             }
         }
+    } else {
+        if (failCss) {
+            if (highlightColumn == null) {
+                $('td', row).css(failCss);
+            } else {
+                for (var a = 0; a < highlightColumn.length; a++) {
+                    var column = highlightColumn[a];
+                    //for (let column of highlightColumn) {
+                    $("td:eq(" + column + ")", row).css(failCss);
+                }
+            }
+        }
     }
 }
-
-// var conditionsContainer = [
-//     {
-//         logic: 'AND',
-//         conditions: [
-//             {
-//                 columnName: 'Test4',
-//                 operator: 'gt',
-//                 value: 2,
-//             },
-//             {
-//                 columnName: 'Test3',
-//                 operator: 'eq',
-//                 value: 'KitKat',
-//             }
-//         ]
-//     },
-// ];
