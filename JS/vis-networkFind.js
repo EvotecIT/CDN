@@ -1,10 +1,8 @@
 ﻿// Example usage:
-// setupSearch('searchInput', 'searchButton', true); // Enables typing search and button click
-// setupSearch('searchInput', null, true); // Enables typing search only
-// setupSearch('searchInput', 'searchButton'); // Enables button click only
-// setupSearch('searchInput', null, true, 5); // Enables typing search only, with minimum 5 characters
+// setupSearch(nodes, edges, 'searchInput', 'searchButton'); // Enables typing search and button click
+// setupSearch(nodes, edges, 'searchInput', null, true, 5); // Enables typing search only, with minimum 5 characters
 
-function updateVisibility(searchQuery) {
+function updateVisibility(searchQuery, nodes, edges) {
     var filteredNodes = nodes.get({
         filter: function (item) {
             return item.label.toLowerCase().includes(searchQuery);
@@ -24,14 +22,14 @@ function updateVisibility(searchQuery) {
     });
 }
 
-function setupSearch(inputId, buttonId = null, enableTypingSearch = false, minChars = 3) {
+function setupSearch(nodes, edges, inputId, buttonId = null, enableTypingSearch = true, minChars = 3) {
     if (enableTypingSearch) {
         document.getElementById(inputId).addEventListener('input', function () {
             if (this.value.length >= minChars) {
-                updateVisibility(this.value.toLowerCase());
+                updateVisibility(this.value.toLowerCase(), nodes, edges);
             } else {
                 // Optionally, reset visibility when below minChars
-                updateVisibility('');
+                updateVisibility('', nodes, edges);
             }
         });
     }
@@ -40,7 +38,7 @@ function setupSearch(inputId, buttonId = null, enableTypingSearch = false, minCh
         document.getElementById(buttonId).addEventListener('click', function () {
             var searchQuery = document.getElementById(inputId).value;
             if (searchQuery.length >= minChars) {
-                updateVisibility(searchQuery.toLowerCase());
+                updateVisibility(searchQuery.toLowerCase(), nodes, edges);
             }
         });
     }
