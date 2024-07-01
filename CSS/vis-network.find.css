@@ -22,6 +22,6 @@
     top: 5px;
     right: 5px;
     z-index: 100;
-    display: flex; /* Added to improve positioning consistency */
-    transform: translate(-5px, 5px); /* Adjust values as needed */
+    display: flex;
+    transform: translate(-5px, 5px);
 }
