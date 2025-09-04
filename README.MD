@@ -24,3 +24,21 @@ Some examples:
 
 - Non-minified: <https://cdn.jsdelivr.net/gh/evotecit/cdn@0.0.4/JS/apexchartsEvents.js>
 - Auto-Minified: <https://cdn.jsdelivr.net/gh/evotecit/cdn@0.0.4/JS/apexchartsEvents.min.js>
+
+```
+git clone https://github.com/EvotecIT/CDN.git
+```
+
+```
+# Remove old folders if they exist
+Remove-Item "C:\Support\GitHub\CDN\CSS" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "C:\Support\GitHub\CDN\JS" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "C:\Support\GitHub\CDN\Images" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "C:\Support\GitHub\CDN\Maps" -Recurse -Force -ErrorAction SilentlyContinue
+
+# Create junctions
+cmd /c mklink /J "C:\Support\GitHub\CDN\CSS"    "C:\Support\GitHub\PSWriteHTML\Resources\CSS"
+cmd /c mklink /J "C:\Support\GitHub\CDN\JS"     "C:\Support\GitHub\PSWriteHTML\Resources\JS"
+cmd /c mklink /J "C:\Support\GitHub\CDN\Images" "C:\Support\GitHub\PSWriteHTML\Resources\Images"
+cmd /c mklink /J "C:\Support\GitHub\CDN\Maps"   "C:\Support\GitHub\PSWriteHTML\Resources\Maps"
+```
